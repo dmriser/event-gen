@@ -1,0 +1,103 @@
+  Keppel Calculation of Inclusive ep scattering
+ starting time:Thu Aug  3 14:38:34 2017    
+ Target thickness =   6.00000005E-03  (r.l.)
+  Incident electron energy =   5.49800014      GeV
+ Electron Q**2 limits:   1.00000000       4.80000019    
+ lower and upper limit for scattered electron energy(GeV):  0.500000000       4.50000000    
+  Minimum photon energy for integration (delta):   5.0000000000000003E-002
+  ntries, nevent, mcall_max:        36185          56           1
+  Integrated cross section =   3.86947021E-02   3.4964889845440231E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.160160661      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:        58746          86           1
+  Integrated cross section =   3.66026238E-02   3.5604439776897527E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.241542906      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:        73249         116           1
+  Integrated cross section =   3.95957306E-02   3.5921577961877782E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.322925687      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:        89082         144           1
+  Integrated cross section =   4.04170491E-02   3.5963483962234671E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.400406122      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       108777         173           1
+  Integrated cross section =   3.97650115E-02   3.5967954855519201E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.480983675      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       126056         202           1
+  Integrated cross section =   4.00663614E-02   3.5947538325083753E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.561930001      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       146585         229           1
+  Integrated cross section =   3.90605181E-02   3.5718854131941612E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.641117990      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       165078         259           1
+  Integrated cross section =   3.92285846E-02   3.5860752478694906E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.722238004      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       184941         289           1
+  Integrated cross section =   3.90711986E-02   3.6108547867303269E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.800364494      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       213436         319           1
+  Integrated cross section =   3.73693109E-02   3.6165727433496324E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.882050514      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       232953         346           1
+  Integrated cross section =   3.71364057E-02   3.5987508356486002E-002  micro-barns
+  Beam time at Lum=1.0E34 =  0.961444676      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       250331         375           1
+  Integrated cross section =   3.74549031E-02   3.5989354038996529E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.04197478      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       267121         403           1
+  Integrated cross section =   3.77215073E-02   3.5974187605884660E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.12024760      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       284615         432           1
+  Integrated cross section =   3.79505418E-02   3.5956426250740560E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.20145416      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       303902         461           1
+  Integrated cross section =   3.79279517E-02   3.5952213721904699E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.28225756      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       325095         490           1
+  Integrated cross section =   3.76858078E-02   3.5994764312068897E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.36130905      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       351453         517           1
+  Integrated cross section =   3.67803089E-02   3.5897050297706914E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.44022977      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       368957         548           1
+  Integrated cross section =   3.71361449E-02   3.6044178624789730E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.52035642      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       385947         578           1
+  Integrated cross section =   3.74448635E-02   3.6117926516467141E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.60031331      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       407383         606           1
+  Integrated cross section =   3.71930525E-02   3.6033786001592780E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.68175495      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       422469         636           1
+  Integrated cross section =   3.76404077E-02   3.6089615214911039E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.76227975      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       444958         664           1
+  Integrated cross section =   3.73113602E-02   3.6042928240805024E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.84224761      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       466766         691           1
+  Integrated cross section =   3.70144174E-02   3.5989119646755829E-002  micro-barns
+  Beam time at Lum=1.0E34 =   1.92002463      seconds
+  Elapsed CPU time =    0.00000000      minutes
+  ntries, nevent, mcall_max:       496393         721           1
+  Integrated cross section =   3.63163091E-02   3.6024899961573799E-002  micro-barns
+  Beam time at Lum=1.0E34 =   2.00139332      seconds
+  Elapsed CPU time =    0.00000000      minutes

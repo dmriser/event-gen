@@ -1,0 +1,87 @@
+  Keppel Calculation of Inclusive ep Scattering
+  Starting time: Thu Aug  3 14:38:34 2017    
+ Target thickness =   6.00000005E-03  (r.l.)
+  Incident electron energy =   5.49800014      GeV
+ Electron Q**2 limits:   1.00000000       4.80000019    
+ lower and upper limit for scattered electron energy(GeV):  0.500000000       4.50000000    
+  Minimum photon energy for integration (delta):   5.0000000000000003E-002
+ sigr_max,ek_max,tk_max  0.100000001       0.00000000       0.00000000    
+  ntries, nevent, mcall_max:       496393         721           1
+  Integrated cross section =   3.63163091E-02   3.6024899961573799E-002  micro-barns
+  Beam time at Lum=1.0E34 =   2.0013934321956968       seconds
+  Elapsed CPU time =    0.00000000      minutes
+  CPU time/event =    0.00000000      sec
+ size of cosine regions: 0.25 0.14 0.11 0.10 0.40
+ csrng =   3.99999991E-02
+ Distribution of mcall values, region 1
+      43      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+
+ Distribution of mcall values, region 2
+      28      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+
+ Distribution of mcall values, region 3
+      25      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+
+ Distribution of mcall values, region 4
+      24      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+
+ Distribution of mcall values, region 5
+      33      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+
+ Distribution of mcall values, region 6
+     568      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+       0      0      0      0      0      0      0      0      0      0
+

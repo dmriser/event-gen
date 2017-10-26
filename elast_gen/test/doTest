@@ -1,0 +1,6 @@
+#!/bin/tcsh 
+
+cp ../elast_gen . 
+rm elast_gen.* 
+
+elast_gen < input.inp 
