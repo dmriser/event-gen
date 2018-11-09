@@ -23,26 +23,26 @@
       read *, opt_strag,opt_fiduc 
       read *, idum_off
       
-      call elast_gen(file1, 	!BOS output file
-     1               file2,	!Summary
-     1               file3,	!Ntuple	
-     1               file4,	!Summary
-     1                   f,	!fraction of events in elas peak
+      call elast_gen(file1,     !BOS output file
+     1               file2,     !Summary
+     1               file3,     !Ntuple
+     1               file4,     !Summary
+     1                   f,     !fraction of events in elas peak
      1                   d,     !egam < delta considered elastic
-     1                  g_,	!Number of particles to detect / event
-     1               tl,tr,	!target length, radius (cm)
-     1             vx,vy,vz,	!target vertex coordinates
-     1                  be,	!beam energy
-     1                 emn,	!minimum scattered e- energy
-     1             smn,smx,	!min,max e- scattering angle
-     1                  p_,	!0=include elastic 1=exclude
-     1                   M,	!Process M events
-     1                   c,	!Maximum cross section
-     1	opt_strag,opt_fiduc,	!Straggling of scattered e- (1=on,0=off) and fiducial cut options
-     1             idum_off)	!random number offset
+     1                  g_,     !Number of particles to detect / event
+     1               tl,tr,     !target length, radius (cm)
+     1             vx,vy,vz,    !target vertex coordinates
+     1                  be,     !beam energy
+     1                 emn,     !minimum scattered e- energy
+     1             smn,smx,     !min,max e- scattering angle
+     1                  p_,     !0=include elastic 1=exclude
+     1                   M,     !Process M events
+     1                   c,     !Maximum cross section
+     1  opt_strag,opt_fiduc,    !Straggling of scattered e- (1=on,0=off) and fiducial cut options
+     1             idum_off)    !random number offset
      
       end
- 
+      
       subroutine elast_gen(file1,file2,file3,file4,f,d,g_,tl,tr,
      +			vx,vy,vz,be,emn,smn,smx,p_,M,c,
      +                   opt_strag,opt_fiduc,idum_off)
@@ -54,20 +54,44 @@ c     See http://clasweb.jlab.org/cgi-bin/cvsweb/cvsweb.cgi/packages/aao/elast_g
 c     This program makes ntuples and BOS event files for (e,e'p) elastic scattering
 c     with the elastic peak modified by vertex corrections according to the Mo-Tsai 
 c     formula (II.6) and internal bremmstrahlung (radiative tails) calculated from 
-c     a Monte-Carlo sampling of formula (B.4) from RMP, Vol. 41, 205 (1969). 
+c     a Monte-Carlo sampling of formula (B.4) and (B.5) from RMP, Vol. 41, 205 (1969). 
 
-c     The ntuple contains:
+c     Ntuple 10 contains:
 c     ES: incident e- energy 
 c     EP: scattered e- energy
-c     EG: photon energy
+c     THETE: scattered e- theta
 c     W:  true hadronic invariant mass
-c     PPX, PPY, PPZ: components of e- momentum
-c     EP: proton energy (EP)
-c     MM: missing energy
+c     PPRX, PPRY, PPRZ: components of p+ momentum
+c     EPROT: proton energy  
+c     THETP: proton theta
+c     PHIPR: proton phi
+c     MM: missing mass
 c     CSTHK,PHIK: photon angles relative to the q vector
+c     EG: photon energy
+c     EGX,EGY,EGZ: components of photon momentum
+c     VX,VY,VZ: target vertex of interaction
+c     Q2: true invariant mass of photon
 
+c     Ntuple 11 contains:
+c     Input arguments after file4
+
+c     Ntuple 12 contains:
+c     TELAP: Elapsed CPU time
+c     NEVEN: Number of generated events
+c     MCALL: mcall_max
+c     SIGI: direct integrated cross section
+c     SIGM: monte-carlo integrated cross section
+c     BMTIM: Total beam time in seconds at lum=10**34
+      
 c     Some tricks are employed to make the monte-carlo concentrate
-c     on the regions where the cross section is large.
+c     on the regions where the cross section is large.  Also the
+c     code attempts to find the maximum value of the radiative integrand
+c     to normalize the monte-carlo sampling (sigr_max).  Note that 
+c     sigr_max may be underestimated when incident e- straggling is turned
+c     on.  The code attempts to compensate for this by oversampling those
+c     events with large incident e- energy loss (mcall>1), which may cause 
+c     spurious statistical spikes when f=1 and delta=0. For that choice of
+c     options, input e- straggling should be commented out.  
 
 c     This version of the program makes only one new file and then quits.
 
@@ -88,12 +112,13 @@ c     This version of the program makes only one new file and then quits.
       
       real mel,mp,pi,alpha
       real es,ep,th0,ppx,ppy,ppz,eprot,egam,delta,egamx,egamy,egamz
+      real ppxTemp, ppyTemp, ppzTemp
       real cstk,phik,q2
+
       real ebeam,epmin0,ps,rs,t_targ,bfac,th_min,th_max,fmcall
       real r_targ,tt
       integer nmax,nprint,elas_inc,id1,id2,id3,iext1
       integer ir1,opt_strag,opt_fiduc,idum_off
-
       character*132 filerz
       character*132 file_out
       character*132 file_sum
@@ -140,25 +165,35 @@ c     This version of the program makes only one new file and then quits.
       character*132 file1,file2,file3,file4
       
       real es_save,ep_save,th0_save
+      real r2d
       logical good_fid
 
-c     Parameters for the n-tuple, which is named func1 and contains
-c     15 elements per event.
+c     Parameters for the n-tuples
+
       common /pawc/h(5000000)
 
-      integer h,n,nevent,lrecl,istat,icycle
-      parameter (n=21)
-      real*4 ntp(n)
-c     tag is the an array of names for the variables in the n-tuple.
-      character*5 tag(n)
+      integer h,n10,n11,n12,nevent,lrecl,istat,icycle
+      parameter (n10=21)
+      parameter (n11=18)
+      parameter (n12=6)
+      real*4 ntp10(n10),ntp11(n11),ntp12(n12)
+      character*5 tag10(n10),tag11(n11),tag12(n12)
 
-      data tag /'  ES ','  EP ','THETE', '  W  ',' PPRX',' PPRY'
+      data tag10/'  ES ','  EP ','THETE', '  W  ',' PPRX',' PPRY'
      * ,' PPRZ','EPROT','THETP','PHIPR',' MM  ','CSTHK','PHIK ','  EG ',
      * ' EGX ',' EGY ',' EGZ ',' VX  ', ' VY  ', ' VZ  ', ' Q2  '/
+     
+      data tag11/'    F','    D','    G','   TL','   TR','   VX','   VY',
+     1'   VZ','   BE','  EMN','  SMN','  SMX','    P','    M','    C',
+     1'OPTSR','OPTFI','IDMOF'/
+     
+      data tag12/'TELAP','NEVEN','MCALL','SIGI ','SIGM ','BMTIM'/
 
-      data mp/0.938/,mel/0.511E-3/
+      data mp/0.93827/,mel/0.511E-3/,r2d/57.2958/
       data ctime  /'                            '/
      
+      open(unit=88, file='clas12.lund')
+
 c     egdiv is the fraction of the time we look in the range of
 c     photon energies from 0 to delta.
       data egdiv/0.2/
@@ -167,6 +202,7 @@ c     photon energies from 0 to delta.
       file_out = file2
       filerz   = file3
       file_sum = file4
+
       pi	= 2.*acos(0.)
       csrng	= .04
       egdiv 	= f
@@ -175,7 +211,6 @@ c     photon energies from 0 to delta.
 
  11   continue
  
-
       cdiv1 	= 0.25
       cdiv2 	= 0.25
       cdiv3 	= 0.05
@@ -185,12 +220,12 @@ c     photon energies from 0 to delta.
       cdiv4	= cdiv3+cdiv4
       
       if (cdiv4 .ge. .95)then
-!         write(6,*) ' The four inputs must sum to a number less than 0.95 '
-         write(6,*) ' Re-enter the four numbers '
+         write(6,*) ' The four inputs must sum to a number less than 0.95'
+         write(6,*)' Re-enter the four numbers'
          go to 11
       endif
       
-c      call timex(tsec0)
+      call timex(tsec0)
       call getunixtime(idum)
       call getasciitime(idum,ctime)
       month = ctime(5:7)
@@ -203,10 +238,9 @@ c      call timex(tsec0)
 
       idum	= -idum+idum_off*10
       write(6,*)'seed:',idum,' from start time ',ctime
-      cstk	= myran(idum)
 
       sigr_all	= 0.
-      wmax	= 3.
+      wmax	= 4.
       bfac	= 4./3.
       alpha	= 1./137.01
       call bos_setup(g_)
@@ -220,17 +254,11 @@ c      call timex(tsec0)
 c     set up the ntuple file
       lrecl=1024
       call hlimit(1000000)
-c      call hropen(1,'elasgen',filerz,'n',lrecl,istat)
-c      call hbookn(10,'func1',n,'elasgen',1000,tag)
-c      call hbnt(10,'elasgen','')
-c      call hbname(10,'func1',ntp(1),'es,ep,th0d,w,ppx,ppy,ppz,eprot,theta_pr,
-c     phi_pr,mm2,cstk,phik,egam,egammax,egammay,egammaz,vx,vy,vz,q2')
-      
-c     Open clas12 format LUND file 
-      open(unit=88,file='clas12.lund')
-c      open(unit=86,file='clas.lund')
-
-
+      call hropen(1,'elasgen',filerz,'n',lrecl,istat)
+      call hbookn(10,'ntp10',n10,'elasgen',1000,tag10)
+      call hbookn(11,'ntp11',n11,'elasgen',1000,tag11)
+      call hbookn(12,'ntp12',n12,'elasgen',1000,tag12)
+            
 c     Initialize BOS
       bosout = file_bos
       call bos_ini(recname)
@@ -241,17 +269,14 @@ c     Initialize BOS
         enddo
       enddo
 
-c     Choose two limits for the electron scattering angle:
       cst00  	= cos(th_min*pi/180.)
       cstmin 	= cos(th_max*pi/180.)
 
       ucos0 	= 1./(1.-cstmin)
       ucrng 	= 1./(1-cst00)-ucos0
       
-c     calculate the scattering angle
-      th0	= th_min*pi/180.
+      th0	= th_min/r2d
       
-c     calculate s=sin(theta/2)**2, cos(theta)
       s		= sin(th0/2.)**2
       cst0 	= cos(th0)
       snt0	= sin(th0)
@@ -272,10 +297,13 @@ c     calculate s=sin(theta/2)**2, cos(theta)
       write(6,*)' Integration range for photon energy =',erng
       write(12,*)' Mininum photon energy =',delta
       write(12,*)' Maximum photon energy =',erng
+      
       fmcall = 1
-      if (fmcall .ne. 0.)then
-       ntries = 0
-      do while (ntries.lt.50000) 
+      
+      print *, 'EP0,EPMIN=',ep0,epmin
+      print *, 'Finding maximum of radiative cross section integrand'
+      
+      do ntries=1,50000
         call sigma_calc(ucos0,ucrng,0.,
      + erng,epmin0,cdiv1,cdiv2,cdiv3,cdiv4,csrng,
      + elast_inc,sigr1,intreg)
@@ -285,13 +313,11 @@ c     calculate s=sin(theta/2)**2, cos(theta)
         ep_save=ep
         th0_save=th0
       endif
-      ntries = ntries+1
       enddo
       
-      print *, es_save,ep_save,acos(th0_save)*180/3.14159,sigr_max
+      print *, 'Kinematics of sigr_max:'
+      print *, 'ES=',es_save,' EP=',ep_save,' TH=',th0_save*r2d,' SIG=',sigr_max
       sigr_max=fmcall*sigr_max
-        
-      endif
 
       write(6,*)' sigr_max changed to', sigr_max
 
@@ -299,29 +325,32 @@ c     Use a Monte-Carlo to calculate a distribution of nmax events
 c     distributed according to the Mo-Tsai integrand.
 
       ntries	= 0
-      nevent	= 0
-     
+      nevent	= 0     
       sig_tot	= 0.
       ntold	= 0
       mcall_max	= 0
-
+      
  20   continue
  
       ntries	= ntries+1
 
-c     calculate the energy of the electron at the scattering point
+c     Calculate the energy of the electron at the scattering point
 c     after making its way through the target.  First, randomly
 c     choose the interaction point.
     
 c     Change from units of r.l. to cm
+
  21   temp 	= hydrogen_rad * t_targ / bfac 
       r_targ 	= tr
       targs	= temp*myran(idum)
 
 c     Change into proper coordinate system
+
       vertex_z 	= vz + targs - temp / 2.0
       
-c     calculates the distance that the electron stays in the target
+c     Calculate the distance from interation to target wall for ep. 
+c     This works for cylindrical target only.  Use GSIM for full 
+c     target geometry and/or more precise straggling correction.
 
       targp	= r_targ/sin(th0)
       temp	= (temp - targs)/cos(th0)
@@ -331,8 +360,11 @@ c     Back to units of r.l.
       targs  	= bfac * targs / hydrogen_rad      
       targp  	= bfac * targp / hydrogen_rad
 
-c     Now calculate the incident beam radiation loss
       es	= ebeam
+
+c     Now calculate the incident beam radiation loss
+c     Note this next line should be commented out when f=1 and delta=0
+
       call stragl(es,targs)
       
       call sigma_calc(ucos0,ucrng,egdiv,
@@ -353,17 +385,11 @@ c     to calculate kinematic quantities for the n-tuple.
       
       if (stest .gt. rtest)mcall = mcall + 1
       if (mcall .gt. mcall_max) mcall_max=mcall
-
+      
 c     If mcall .gt. 0 generate mcall n-tuple events.
-
-       w = sqrt(mp**2+2*mp*(ebeam-ep)-4.*ebeam*ep*sin(th0/2)**2)
-c      if (w.gt.1.05) write(*,*) 'W BOLSHE'
-c       if (w.le.1.05) write(*,*) 'W MENSHE'
 
       if (mcall .lt. 1)go to 20
       
-c      if (w.gt.1.05) write(*,*) 'W bolshe'
-c      if (w.le.1.05) write(*,*) 'W menshe'
       if (mcall .lt. 100)then
         dismc(intreg,mcall)=dismc(intreg,mcall)+1
       else
@@ -372,71 +398,71 @@ c      if (w.le.1.05) write(*,*) 'W menshe'
       
       ep_sav	= ep
       
-      call missm(theta_pr,phi_pr,mm2)
+      call missm(ebeam,theta_pr,phi_pr,mm2)
 
       do j=1,mcall
       
-        th0d = th0*180./pi
+        th0d = th0*r2d
         ep   = ep_sav
 
+c     Calculate the radiation loss for the electron leaving the target
+c     Choose opt_strag=0 if this step is performed in GEANT
         if (opt_strag.eq.1) call stragl(ep,targp)
         if (ep .lt. epmin0) go to 55
         
 77      phi_r = 2*pi*myran(idum)
-        phi_h = phi_r*180./pi
+        phi_h = phi_r*r2d
         phi_h = newphi(phi_h)
         if(opt_fiduc.eq.1.and.accvb(th0d,phi_h,smn,smx).eq.0) go to 77
         if(opt_fiduc.eq.2) phi_r = 0.
-        
-c     Calculate the radiation loss for the electron leaving the target
-c     Comment out if this step is performed in GEANT
-        if (opt_strag.eq.1) call missm(theta_pr,phi_pr,mm2)
 
-c     Calculate W as if there were no photon radiated.
+c     Calculate W as if there was no photon radiated.
+
         w = sqrt(mp**2+2*mp*(ebeam-ep)-4.*ebeam*ep*sin(th0/2)**2)
+        
+c     Increment ntuple 10
+        ntp10(1)=es
+        ntp10(2)=ep
+        ntp10(3)=th0d
+        ntp10(4)=w
+        ntp10(5)=ppx
+        ntp10(6)=ppy
+        ntp10(7)=ppz
+        ntp10(8)=eprot
+        ntp10(9)=theta_pr*r2d
+        ntp10(10)=phi_pr*r2d
+        ntp10(11)=mm2
+        ntp10(12)=cstk
+        ntp10(13)=phik*r2d
+        ntp10(14)=egam
+        ntp10(15)=egamx
+        ntp10(16)=egamy
+        ntp10(17)=egamz
+        ntp10(18)=vertex_x
+        ntp10(19)=vertex_y
+        ntp10(20)=vertex_z
+        ntp10(21)=q2
 
-c     Increment the n-tuple.
-        ntp(1)=es
-        ntp(2)=ep
-        ntp(3)=th0d
-        ntp(4)=w
-        ntp(5)=ppx
-        ntp(6)=ppy
-        ntp(7)=ppz
-        ntp(8)=eprot
-        ntp(9)=theta_pr*180./pi
-        ntp(10)=phi_pr*180./pi
-        ntp(11)=mm2
-        ntp(12)=cstk
-        ntp(13)=phik*180./pi
-        ntp(14)=egam
-        ntp(15)=egamx
-        ntp(16)=egamy
-        ntp(17)=egamz
-        ntp(18)=vertex_x
-        ntp(19)=vertex_y
-        ntp(20)=vertex_z
-        ntp(21)=q2
-
-c        call hfn(10,ntp)
-c        call hfnt(10)
+        call hfn(10,ntp10)
         nevent=nevent+1
 
-c     --------------------------------------------------------
-c     clas12.lund output stream
-c     --------------------------------------------------------
-        write(88,*) '2 0 0 0 0 0 0 0 0 0'
-        write(88,*) '1 -1 1 11 0 0', ep*sin(th0)*cos(phi_r),
-     +   ep*sin(th0)*sin(phi_r), ep*cos(th0), ep,' 0 ',vertex_x,
-     +   vertex_y, vertex_z
-        write(88,*) '2 1 1 2212 0 0', ppx, ppy, ppz, eprot, '0',
-     +   vertex_x, vertex_y, vertex_z
-c     --------------------------------------------------------
-c     end
-c     --------------------------------------------------------
+c        write(88,*) '2 0 0 0 0 0 0 0 0 0'
+c        write(88,*) '1 -1 1 11 0 0', ep*sin(th0)*cos(phi_r),
+c     +       ep*sin(th0)*sin(phi_r), ep*cos(th0), ep,' 0 ',vertex_x,
+c     +       vertex_y, vertex_z
+c        write(88,*) '2 1 1 2212 0 0', ppx, ppy, ppz, eprot, '0',
+c     +       vertex_x, vertex_y, vertex_z
 
         call bos_cal(phi_r)
-        call bos_out	! Pack the BOS banks and write out to file      
+ 
+        write(88,*) '2 0 0 0 0 0 0 0 0 0'                                                                                                                                                                                                               
+        write(88,*) '1 -1 1 11 0 0', ep*sin(th0)*cos(phi_r),                                                                                                                                                                                            
+     +       ep*sin(th0)*sin(phi_r), ep*cos(th0), ep,' 0 ',vertex_x,                                                                                                                                                                                    
+     +       vertex_y, vertex_z                                                                                                                                                                                                                         
+        write(88,*) '2 1 1 2212 0 0', ppx, ppy, ppz, eprot, '0',                                                                                                                                                                                        
+     +       vertex_x, vertex_y, vertex_z                   
+
+       call bos_out	! Pack the BOS banks and write out to file      
         
  55     continue
  
@@ -454,22 +480,24 @@ c     Do we have enough events in the n-tuple?
       if (nevent .gt. nmax)go to 50
  30   go to 20
 
-c     Close out the n-tuple file
-c 50   call hrout(0,icycle,' ')
-c      call hrend('elasgen')
-
+ 50   continue
+ 
 c     Close out the bos event file
-c     Renamed to 50 because removing paw stuff 
- 50   CALL bos_end(recname)
+      CALL bos_end(recname)
 
-c     Close output LUND files 
-      close(88)
-c      close(86)
+      call timex(tsec1)
+      t_elapse	= tsec1-tsec0
+
+      write(6,1199)t_elapse
+      write(12,1199)t_elapse
+ 1199 format(' Elapsed CPU time = ',f10.1,' seconds')
 
       write(14,*)'Start time ',ctime
       write(14,5004)ntries,nevent,mcall_max
  5004 format(' ntries =',i10,',  successes =',i8,', mcall_max = ',i3)
 
+      write(14,5005)t_elapse/60
+ 5005 format(' Elapsed CPU time = ',f8.2,' minutes')
 
       do intreg=1,5
         if (intreg .eq. 1)frac=cdiv1
@@ -501,17 +529,47 @@ c      close(86)
       
       write(14,5012)sigr_max
  5012 format(' Reference differential cross section was',f10.6)
-!      write(14,5006)sig_int,sig_sum
-! 5006 format(' Integrated cross section (direct)=',f10.5,
-!      ' micro-barns'+' Integrated cross section (from successes)='\
-!      ,f10.5,'micro-barns')
-
+      write(14,5006)sig_int,sig_sum
+ 5006 format(' Integrated cross section (direct)=',f10.5,' micro-barns'/
+     + ' Integrated cross section (from successes)=',f10.5,' micro-barns')
       write(14,5007)nevent/sig_sum*1.E-4
  5007 format(' Beam time at Luminosity =1.0E34 =',f8.3,' seconds')
 
+      ntp11(1)=f
+      ntp11(2)=d
+      ntp11(3)=g_
+      ntp11(4)=tl
+      ntp11(5)=tr
+      ntp11(6)=vx
+      ntp11(7)=vy
+      ntp11(8)=vz
+      ntp11(9)=be
+      ntp11(10)=emn
+      ntp11(11)=smn
+      ntp11(12)=smx
+      ntp11(13)=p_
+      ntp11(14)=M
+      ntp11(15)=c
+      ntp11(16)=opt_strag
+      ntp11(17)=opt_fiduc
+      ntp11(18)=idum_off      
+      call hfn(11,ntp11)
+        
+      ntp12(1)=t_elapse
+      ntp12(2)=nevent
+      ntp12(3)=mcall_max
+      ntp12(4)=sig_int
+      ntp12(5)=sig_sum
+      ntp12(6)=nevent/sig_sum*1e-4
+      call hfn(12,ntp12)
+      
+c     Close out the n-tuple file
+      call hrout(0,icycle,' ')
+      call hrend('elasgen')
 
       close(unit=12)
       close(unit=14)
+      close(unit=88)
 
       stop
       end
@@ -598,76 +656,46 @@ c     Initialization section:
       return
       end
 
-
-      subroutine missm(theta_pr,phi_pr,mm2)
+      subroutine missm(ebeam,theta_pr,phi_pr,mm2)
 
       implicit none
 
 c     Input:
-c         ebeam = incident electron energy
-c	  es = incident energy at point of interaction in target
-c         ep = scattered electron energy
-c         th0 = electron scattering angle
-c         egam = energy of radiated photon
-c         cstk = cosine of the photon angle (relative to the q vector)
+c         ebeam: incident electron energy
+c	  es:    incident energy at point of interaction in target
+c         ep:    scattered electron energy
+c         th0:   electron scattering angle
+c         egam:  energy of radiated photon
+c         cstk:  cosine of the photon angle (relative to the q vector)
 c     Output:
-c         phik = azimuthal angle of photon
-c         ppx, ppy, ppz = proton momentum components
-c         mm2 = experimental missing mass
+c         ppx,ppy,ppz:     proton momentum components
+c         theta_pr,phi_pr: lab theta,phi of proton 
+c         mm2:             experimental missing mass
          
-c     Choose the phi angle of the photon randomly.
-c     Choose the hadronic decay angles randomly and calculate the
-c     missing mass, the proton momenta and pion momenta.
-
-      common /random/idum
       common /stdpar/mel,mp,pi,alpha
       common /bos_events/es,ep,th0,ppx,ppy,ppz,eprot,egam,delta,
-     * egamx,egamy,egamz,cstk,phik,rq2
-
-      common /parset/ebeam,epmin0,ps,rs,t_targ,bfac,th_min,th_max
-     * ,nmax,nprint, elas_inc,recname,id1,id2,id3,iext1,fmcall
-     * ,sigr_max,month,day,year,filerz,file_out,file_sum,file_bos
-      common /new_parset/vertex_x,vertex_y,vertex_z,hydrogen_rad,v_z
+     * egamx,egamy,egamz,cstk,phik,q2
      
       real mel,mp,pi,alpha
-
       real es,ep,th0,ppx,ppy,ppz,eprot,egam,delta,egamx,egamy,egamz
-      real cstk,phik,rq2
-
-      real ebeam,epmin0,ps,rs,t_targ,bfac,th_min,th_max,fmcall
-      real vertex_x,vertex_y,vertex_z,hydrogen_rad,v_z
+      real cstk,phik,q2
      
-      integer nmax,nprint,elas_inc,id1,id2,id3,iext1
-      character*132 filerz
-      character*132 file_out
-      character*132 file_sum
-      character*132 file_bos
-      character*8 recname
-      character*3 month
-      character*2 day
-      character*2 year
-
-
       real csphip
       real csphk
       real csthe
       real csthp
       real cstq
-c      real del_p
-c      real del_phi
-c      real del_the
-c      real delthe
-c      real delphi
-      real eph_dot_q
+
+      real ebeam
       real mm2
       real nu
       real pbeam
       real pps,pprot
       real pp
-      real q2
+      real ps
+      real rq2
       real q_dot_pp
       real qx,qz,qvec
-c      real ran,r1,r2
       real sigr_max
       real snphip
       real snphk
@@ -686,18 +714,18 @@ c      real ran,r1,r2
       nu	= es-ep
       ps	= sqrt(es**2-mel**2)
       pp	= sqrt(ep**2-mel**2)
-      q2	= 2.*es*ep-2.*ps*pp*csthe-2.*mel**2
-      w2	= mp**2-q2+2.*mp*nu
+      rq2	= 2.*es*ep-2.*ps*pp*csthe-2.*mel**2
+      w2	= mp**2-rq2+2.*mp*nu
 
-c     get components of the q vector in the lab frame.
-c     By definition the scattered electron has a positive x component
-c     in the lab frame
+c     get lab components of the q vector using es
+c     By definition es_x > 0 and qx < 0
 
       qx 	= -pp*snthe
       qz	= ps-pp*csthe
       qvec	= sqrt(qx**2+qz**2)
 
 c     get components of the photon vector in the lab frame
+
       sntk	= sqrt(1.-cstk**2)
 
       csphk	= cos(phik)
@@ -709,10 +737,8 @@ c     get components of the photon vector in the lab frame
       egamy	= egam*sntk*snphk
       egamz	= egam*(cstk*cstq+sntk*csphk*sntq)
 
-c     calculate the dot product of the photon vector and the q-vector
-      eph_dot_q	= egamx*qx+egamz*qz
+c     calculate proton momentum vector in lab frame
 
-c     calculate laboratory components of the proton momentum vector
       ppz	= qz-egamz
       ppx	= qx-egamx
       ppy	= -egamy
@@ -726,25 +752,20 @@ c     calculate laboratory components of the proton momentum vector
       snphip	= ppy/pprot/snthp
       phi_pr	= atan2(snphip,csphip)
 
-      csthe	= cos(th0)
-      snthe	= sin(th0)
-
 c     Calculate the square of the missing mass, associated with the
 c     proton momentum components and the electron beam energy:
 
       nu	= ebeam-ep
       pbeam 	= sqrt(ebeam**2-mel**2)
-      q2	= 2.*ebeam*ep-2.*pbeam*pp*csthe-2.*mel**2
+      rq2	= 2.*ebeam*ep-2.*pbeam*pp*csthe-2.*mel**2
 
-c     get components of the q vector in the lab frame.
-c     By definition the scattered electron has a positve x component
-c     in the lab frame
+c     get lab components of the q vector using ebeam
 
       qx	= -pp*snthe
       qz	= pbeam-pp*csthe
       q_dot_pp	= qx*ppx+qz*ppz
 
-      mm2	= -q2+2*mp**2+2*mp*(nu-eprot)-2*nu*eprot+2*q_dot_pp
+      mm2	= -rq2+2*mp**2+2*mp*(nu-eprot)-2*nu*eprot+2*q_dot_pp
 
       return
       end
@@ -794,7 +815,7 @@ c     Units are GeV
       phik	= phik_4
 
       me	= 0.000511
-      mp	= .938
+      mp	= .93827
       alpha	= 1/137.01
       d3sig	= 0.
 
@@ -889,7 +910,7 @@ c     post straggling included in this calculation.
 
       common /stdpar/mel,mp,pi,alpha
       common /rad_cor/del_radcor
-      real del_radcor(400)
+      real del_radcor(1000)
       real mel,mp,pi,alpha
 
       real es,theta
@@ -905,7 +926,7 @@ c     post straggling included in this calculation.
       iq	= qs*50.
       iq	= iq+1
       
-      if (iq.gt.400)then
+      if (iq.gt.1000)then
         write(6,*)' Q2 = ',qs,' exceeds programmed range'
         stop
       endif
@@ -1098,8 +1119,9 @@ c     Rotate all momenta by a random angle around the z axis
         pytmp = p(jj,2)
         p(jj,1) = pxtmp*cos_phir+pytmp*sin_phir
         p(jj,2) = pytmp*cos_phir-pxtmp*sin_phir
+        ppx = p(2,1)
+        ppy = p(2,2)
       enddo
-
       return
       end
 
@@ -1183,12 +1205,9 @@ c     Rotate all momenta by a random angle around the z axis
       character*2 day
       character*2 year
 
-c      character*1 ich1
-c      integer ir1
-
       t_targ = tl
 
-      hydrogen_rad = 865 ! hydrogen radtion length (cm)
+      hydrogen_rad = 865 ! hydrogen radiation length (cm)
       t_targ = bfac * t_targ / hydrogen_rad 
 
       vertex_x = vx
@@ -1198,6 +1217,7 @@ c      integer ir1
       ebeam = be
       write(6,501)ebeam
  501  format(' Incident electron energy = ',f7.3,' GeV')
+ 
       epmin0 = emn
       write(6,*)epmin0
  502  format(' Minimum allowed scattered electron energy =',f7.3,' MeV')
@@ -1207,8 +1227,10 @@ c      integer ir1
 c     Specify the minimum and maximum scattering angles
       th_min = smn
       th_max = smx
+      
 c     Decide whether to include the elastic peak in the n-tuple
       elas_inc = p_
+      
 c     Select the number of events desired in the rz file.
       nmax = M
       nprint=nmax/25
@@ -1286,12 +1308,14 @@ c     filerz=elasgen-1.6-0000.rz.00, for example.
      *    ,ntries,nevent,mcall_max
       write(12,*)' ntries,nevent, mcall_max: '
      *    ,ntries,nevent,mcall_max
-      sig_int=nevent
-      sig_int=sig_int/ntries
-      space=4.*pi*ucrng*2.*pi*erng
-      sig_int=sig_int*sigr_max*space
-      tries=ntries
-      sig_sum=sig_tot*space/tries
+     
+      sig_int  = nevent
+      sig_int  = sig_int/ntries
+      space    = 4.*pi*ucrng*2.*pi*erng
+      sig_int  = sig_int*sigr_max*space
+      tries    = ntries
+      sig_sum  = sig_tot*space/tries
+      
       print *, sig_tot,space,tries
       write(6,*)' sig_int = ',sig_int,sig_sum
           
@@ -1301,8 +1325,9 @@ c     filerz=elasgen-1.6-0000.rz.00, for example.
       write(12,*)' Number of seconds at Lum=1E34 is',
      *    (1.E-4)*nevent/sig_int
 
-c      call timex(tsec1)
+      call timex(tsec1)
       t_elapse=tsec1-tsec0
+      
       write(6,110)t_elapse
       write(12,110)t_elapse
  110  format(' Elapsed CPU time = ',f8.1,' seconds')
@@ -1313,6 +1338,7 @@ c      call timex(tsec1)
       subroutine sigma_calc(ucos0,ucrng,egdiv,
      + erng,epmin0,cdiv1,cdiv2,cdiv3,cdiv4,csrng,
      + elast_inc,sigr1,intreg)
+     
       implicit none
 
       common /random/idum
@@ -1339,18 +1365,17 @@ c      call timex(tsec1)
       real epk,pp
       real den,cstk1,cstk2,cran,mcfac,mpfac,Tk,uek
       real sigr1,sig_el,nu,qvec
-      real myran
+      real myran,myrann
       
       integer intreg,elast_inc
-
       integer*4 idum
       
       sigr1	= 0
 
       ps	= sqrt(es**2-mel**2)
-      rs	= ps/es
       
 c     Calculate scattering angle
+
       ucos	= ucos0+ucrng*myran(idum)
       cst0	= 1.-1./ucos
       jacob	= 1./ucos**2
@@ -1367,9 +1392,17 @@ c     of radiation
       a3	= (es+mp)**2-(ps*cst0)**2
       ep0	= (a2+sqrt(a2**2-a1*a3))/a3
 
+c lcs 1/1/14: If delta=0 then purely elastic with no RC, regardless of egdiv (f)
+
+      if (delta.eq.0.00) then
+        call epelas(es,th0,sigr1)
+        ep = ep0
+        sigr1=sigr1*jacob/erng/4./pi
+        return
+      endif
+      
 c     Randomly choose the energy and momentum of the scattered electron,
 c     and calculate Q**2
-
       uek       = 1.0
       if (egdiv.gt.0) uek = myran(idum)
       
@@ -1390,10 +1423,12 @@ c     and calculate Q**2
       endif
 
 c     Event is in the elastic peak
+
       intreg	= 6
       call elas_cor(es,th0,sig_el)
       
 c     Make an effective cross section differential in ek,csthk,phik
+
       sigr1	= sig_el*jacob/delta/4./pi
 
       den	= sqrt(ps**2+pp**2-2.*ps*pp*cst0)
@@ -1407,7 +1442,9 @@ c     Make an effective cross section differential in ek,csthk,phik
       endif
       
       phik	= 0.
+      
 c     The following calculation of the photon energy is approximate
+
       q2	= 4.*es*ep*s
       nu	= es-ep
       qvec	= sqrt(q2+nu**2)
@@ -1469,6 +1506,7 @@ c     The following calculation of the photon energy is approximate
      +  .or. abs(cstk-cstk2) .lt. csrnge)then
          if (abs(phik) .lt. pi/18.)go to 44
          endif
+
 c     The following line corrected on Jan. 15, 1999
          mcfac 	= (1.-2.*csrnge)/(1.-cdiv4)
          mpfac	= 17./18.
@@ -1484,6 +1522,7 @@ c     The following line corrected on Jan. 15, 1999
       if (sigr1 .lt. 0.)sigr1=0.
       
 c     Normalize sigr according to the integration region.
+
 48    sigr1	= mpfac*mcfac*sigr1
       
       return
@@ -1513,7 +1552,7 @@ c     post straggling included in this calculation.
 
       common /stdpar/mel,mp,pi,alpha
       common /rad_cor/del_radcor
-      real del_radcor(400)
+      real del_radcor(1000)
       real mel,mp,pi,alpha
 
       real*8 spence,arg
@@ -1523,7 +1562,7 @@ c     post straggling included in this calculation.
       real arg11,arg15,arg19,arg23
       real epr,e1,e3,e4,gamma4,beta4
       real snth,s2
-      integer iq, idel
+      integer iq,idel
 
 c     Calculate correction for hydrogen or deuterium elastic scattering
 
@@ -1535,11 +1574,11 @@ c      b=bfunc(z)
 c      ' Input thickness, rad. leng.'
 c      t=0.
 
-      do iq=1,400
+      do iq=1,1000
          del_radcor(iq)=0.
       enddo
       
-      do iq=1,400
+      do iq=1,1000
       qs	= iq
       qs	= qs/50.
       s2	= qs/4./es/(es-qs/2./mp)
@@ -1558,9 +1597,10 @@ c      if (theta_d .gt. 90.)return
       e3	= eel
       e4	= epr
       eta	= es/eel
+      
       deltac(1)		= 28./9.-13./6.*alog(qs/mel**2)
-      deltac(2)		= (alog(qs/mel**2) - 1. + 2.*alog(eta) )
-     *  * ( 2.*alog(e1/delta) - 3.*alog(eta) )
+      deltac(2)		= (alog(qs/mel**2) - 1. + 2.*znuc*alog(eta) )
+     *              * ( 2.*alog(e1/delta)       - 3.*alog(eta) )
       arg		= (e3-e1)/e3
       deltac(3)		= -spence(arg)
       deltac(4)		= znuc**2*alog(e4/mp)
@@ -1627,4 +1667,5 @@ c      if (theta_d .gt. 90.)return
 
  99   return
       end
+
 
